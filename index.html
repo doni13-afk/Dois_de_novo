@@ -24,6 +24,16 @@ src="https://www.facebook.com/tr?id=1457990719543869&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
 
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "z0sr4fg3rx");
+</script>
+<!-- End Microsoft Clarity -->
+
 <style>
 :root{
   --ink:#2b121d;--ink-soft:#3b1c29;--paper:#fbf8f2;--cream:#f3ece5;--bone:#eee2d6;
@@ -65,8 +75,9 @@ a{color:inherit;text-decoration:none}
 .hero-trust span{display:inline-flex;align-items:center;gap:6px}
 .hero-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(230,184,92,.15);border:1px solid rgba(230,184,92,.4);border-radius:99px;padding:8px 18px;margin-bottom:20px;font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--gold-light)}
 .hero-badge strong{color:#fff;font-size:15px}
+
 .hero-visual{border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.hero-visual img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.hero-visual img{width:100%;aspect-ratio:16/9;object-fit:cover;object-position:center;display:block}
 
 .section{padding:88px 0}
 .section-cream{background:var(--paper);color:var(--ink)}
@@ -622,7 +633,7 @@ a{color:inherit;text-decoration:none}
           <li><strong>Kit de Emergência</strong> (5 áudios)</li>
           <li><strong>30 Mensagens que Reacendem</strong></li>
         </ul>
-        <a href="#checkout-premium" class="btn btn-premium">QUERO O PREMIUM COMPLETO</a>
+        <a href="#" id="btn-checkout-premium" class="btn btn-premium">QUERO O PREMIUM COMPLETO</a>
         <p class="plan-note">🛡️ Garantia incondicional de 7 dias</p>
       </div>
     </div>
@@ -664,8 +675,8 @@ a{color:inherit;text-decoration:none}
       </ul>
     </div>
 
-    <a href="#checkout-premium-37" class="btn upgrade-cta">SIM, QUERO O PREMIUM POR R$ 37</a>
-    <a href="#checkout-basico" class="upgrade-decline">Não quero, só o de R$ 19,00</a>
+    <a href="#" id="btn-checkout-premium-37" class="btn upgrade-cta">SIM, QUERO O PREMIUM POR R$ 37</a>
+    <a href="#" id="btn-checkout-basico" class="upgrade-decline">Não quero, só o de R$ 19,00</a>
   </div>
 </div>
 
@@ -877,13 +888,74 @@ function playMarinaVideo(){
   const iframe = document.getElementById('marinaIframe');
   if(!cover || !player || !iframe) return;
 
-  // ⚠️ SUBSTITUA "SEU_FILE_ID_AQUI" pelo ID do vídeo no Google Drive
-  const fileId = 'SEU_FILE_ID_AQUI';
+  const fileId = '1R5L-r7ihNSgMB0oCjd5PJXHud_0mPE3p'; // ID do vídeo inserido
   iframe.src = 'https://drive.google.com/file/d/' + fileId + '/preview?autoplay=1';
 
   cover.style.display = 'none';
   player.style.display = 'block';
 }
+
+// ==========================================
+// CAPTURA DE UTM E EVENTOS DE CHECKOUT
+// ==========================================
+document.addEventListener("DOMContentLoaded", function() {
+  // Função para pegar parâmetros UTM da URL
+  function getUtms() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utms = {};
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'src', 'sck'].forEach(param => {
+      if (urlParams.has(param)) {
+        utms[param] = urlParams.get(param);
+      }
+    });
+    return utms;
+  }
+
+  // Função unificada para trackear e redirecionar
+  function handleCheckout(btnId, checkoutName, checkoutValue, baseUrl) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      const utms = getUtms();
+
+      // 1. Dispara evento no Microsoft Clarity
+      if (window.clarity) {
+        window.clarity("event", "click_checkout_" + checkoutName);
+      }
+
+      // 2. Dispara evento de InitiateCheckout no Meta Pixel com UTMs
+      if (window.fbq) {
+        window.fbq('track', 'InitiateCheckout', {
+          content_name: checkoutName,
+          value: checkoutValue,
+          currency: 'BRL',
+          ...utms // Espalha os UTMs no evento
+        });
+      }
+
+      // 3. Constrói a URL do checkout com os UTMs e redireciona
+      const url = new URL(baseUrl);
+      Object.keys(utms).forEach(key => {
+        url.searchParams.append(key, utms[key]);
+      });
+
+      window.location.href = url.toString();
+    });
+  }
+
+  // Configurando os botões (IDs correspondem ao HTML)
+  // Premium R$ 47
+  handleCheckout('btn-checkout-premium', 'premium_47', 47.00, 'https://pay.wiapy.com/h82O31dtfYw2');
+  
+  // Premium R$ 37 (Oferta do Modal)
+  handleCheckout('btn-checkout-premium-37', 'premium_37', 37.00, 'https://pay.wiapy.com/LxZvhcl1tze');
+  
+  // Essencial R$ 19 (Botão de recusa do Modal)
+  handleCheckout('btn-checkout-basico', 'basico_19', 19.00, 'https://pay.wiapy.com/WDvUOhBSaU45');
+});
 </script>
 
 </body>
